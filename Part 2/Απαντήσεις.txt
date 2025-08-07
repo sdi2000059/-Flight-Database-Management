@@ -1,0 +1,83 @@
+
+use flight;
+
+#1
+select number
+from airplanes airp, airlines airl, airlines_has_airplanes aa
+where manufacturer = 'Airbus' and name = 'Lufthansa' and aa.airplanes_id = airp.id and aa.airlines_id = airl.id ;
+
+#2
+select distinct airl.name
+from airlines airl , airports airp, routes ro
+where  ro.source_id =(select airp.id from airports airp where airp.city = 'Athens')
+and ro.destination_id=(select airp.id from airports airp where airp.city = 'Prague')  and ro.airlines_id = airl.id ;
+
+#3
+select distinct count(pass.id)
+from flights fl, passengers pass, airlines airl, flights_has_passengers flpas, routes ro
+where fl.date = '2012-02-19' and airl.name = 'Aegean Airlines' and pass.id = flpas.passengers_id and airl.id = ro.airlines_id and ro.id = flpas.flights_id and fl.id = flpas.flights_id ;
+
+#4
+select 'YES' as answer 
+where exists ( select * from airlines airl, airports airp, routes ro, flights fl where airl.name = 'Olympic Airways' and fl.date = '2014-12-12' and ro.source_id = (select airp.id
+                                                                                    from airports airp
+                                                                                    where airp.name = 'Athens El. Venizelos')
+                                                            and ro.destination_id=(select airp.id
+                                                                                    from airports airp
+                                                                                    where airp.name = 'London Gatwick'))  
+union
+select 'NO' as answer
+where not exists ( select * from airlines airl, airports airp, routes ro, flights fl where airl.name = 'Olympic Airways' and fl.date = '2014-12-12' and ro.source_id = (select airp.id
+                                                                                    from airports airp
+                                                                                    where airp.name = 'Athens El. Venizelos')
+                                                            and ro.destination_id=(select airp.id
+                                                                                    from airports airp
+                                                                                    where airp.name = 'London Gatwick')) ;
+
+#5
+select avg(2022 - pass.year_of_birth)
+from passengers pass, flights fl, flights_has_passengers flpas, airports airp, routes ro
+where  airp.city = 'Berlin' and ro.id = fl.routes_id and pass.id = flpas.passengers_id and fl.id = flpas.flights_id ;
+
+#6
+select pass.name, pass.surname
+from passengers pass, flights fl, flights_has_passengers flpas
+where pass.id = flpas.passengers_id and fl.id = flpas.flights_id
+group by pass.id
+having count(distinct fl.airplanes_id) = 1;
+
+#7
+select ro.destination_id, ro.source_id, count(pass.id), airp.city 
+from routes ro, flights fl, passengers pass, flights_has_passsengers flpas, airports airp
+where (fl.date >= '2010-03-01' and fl.date <= '2014-07-17') and pass.id = flpas.passengers_id 
+	and (select airp.city from airports airp, routes ro where airp.id = ro.source_id) 
+    and (select airp.city from airports airp, routes ro where airp.id = ro.destination_id) 
+group by pass.id
+having count(*) > 5;
+
+#8
+select airl.name, airl.id, count(ro.airlines_id)
+from airlines airl, routes ro, airplanes airp ,airlines_has_airplanes airair
+where airl.id = ro.airlines_id and airl.id = airair.airlines_id and airp.id = airair.airplanes_id
+group by airair.airplanes_id
+having count( airair.airplanes_id ) = 4;
+
+#9
+select pass.name, pass.surname
+from passengers pass, airlines airl, flights fl, flights_has_passengers flpas, routes ro
+where airl.active = 'Y' and pass.id = flpas.passengers_id and fl.id = flpas.flights_id and ro.id = fl.routes_id and airl.id = ro.airlines_id 
+group by airl.active
+having count(airl.active) = count(ro.airlines_id);
+
+#10
+select pass.name, pass.surname
+from passengers pass, airlines airl, flights_has_passengers flpas, flights fl, routes ro
+where airl.name = 'Aegean Airlines' and pass.id = flpas.passengers_id and fl.id = flpas.flights_id and ro.id = fl.routes_id and airl.id = ro.airlines_id
+group by pass.id
+having count(*) = 1
+union
+select pass.name, pass.surname
+from passengers pass, flights fl, flights_has_passengers flpas
+where fl.date > '2011-01-02' and fl.date < '2013-12-31' and pass.id = flpas.passengers_id and fl.id = flpas.flights_id 
+group by pass.id 
+having count(pass.id) > 1;
